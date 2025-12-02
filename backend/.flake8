@@ -1,0 +1,17 @@
+[flake8]
+max-line-length = 127
+max-complexity = 10
+# 忽略特定的错误代码
+ignore = 
+    E501,  # line too long
+    W503,   # line break before binary operator
+    E203,   # whitespace before ':'
+    F821,   # undefined name (临时忽略)
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    build,
+    dist,
+    .pytest_cache
