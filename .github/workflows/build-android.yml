@@ -3,8 +3,6 @@ name: Build Android APK
 on:
   push:
     branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build-apk:
@@ -23,124 +21,33 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
+      - name: Create Android project
+        run: |
+          # 创建基本目录
+          mkdir -p android/app/src/main/{java,res/{layout,values},python,assets}
+          
+          # 使用 printf 创建文件（更可靠）
+          printf 'include ":app"\n' > android/settings.gradle
+          
+          printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.0.0"\n    }\n}\n\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > android/build.gradle
+          
+          printf 'apply plugin: "com.android.application"\n\nandroid {\n    namespace "com.audiobooktool"\n    compileSdk 34\n    \n    defaultConfig {\n        applicationId "com.audiobooktool"\n        minSdk 21\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n    \n    buildTypes {\n        release {\n            minifyEnabled false\n        }\n    }\n}\n\ndependencies {\n    implementation "androidx.appcompat:appcompat:1.6.1"\n}\n' > android/app/build.gradle
+          
+          printf "org.gradle.jvmargs=-Xmx2048m\nandroid.useAndroidX=true\n" > android/gradle.properties
+
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
           gradle-version: 8.0
-
-      - name: Prepare Android project
-        run: |
-          # 如果没有 android 目录，创建一个
-          if [ ! -d "android" ]; then
-            echo "🔧 Creating Android project structure..."
-            mkdir -p android/{app/src/main/{java,res/{layout,values},python,assets},gradle/wrapper}
-            
-            # 创建 settings.gradle
-            cat > android/settings.gradle << 'EOF'
-include ':app'
-EOF
-            
-            # 创建 build.gradle
-            cat > android/build.gradle << 'EOF'
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.0.0'
-    }
-}
-
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-EOF
-            
-            # 创建 app/build.gradle
-            cat > android/app/build.gradle << 'EOF'
-apply plugin: 'com.android.application'
-
-android {
-    namespace 'com.audiobooktool'
-    compileSdk 34
-    
-    defaultConfig {
-        applicationId "com.audiobooktool"
-        minSdk 21
-        targetSdk 34
-        versionCode 1
-        versionName "1.0"
-    }
-    
-    buildTypes {
-        release {
-            minifyEnabled false
-        }
-    }
-}
-
-dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-}
-EOF
-            
-            # 创建 gradle.properties
-            cat > android/gradle.properties << 'EOF'
-org.gradle.jvmargs=-Xmx2048m
-android.useAndroidX=true
-EOF
-            
-            echo "✅ Android project structure created"
-          fi
-          
-          # 复制文件到 Android 项目
-          echo "📋 Copying files..."
-          mkdir -p android/app/src/main/{python,assets}
-          
-          if [ -d "backend" ]; then
-            cp -r backend/* android/app/src/main/python/ 2>/dev/null || true
-            echo "✅ Backend files copied"
-          fi
-          
-          if [ -d "frontend" ]; then
-            cp -r frontend/* android/app/src/main/assets/ 2>/dev/null || true
-            echo "✅ Frontend files copied"
-          fi
-
-      - name: Generate Gradle Wrapper
-        run: |
-          cd android
-          if [ ! -f "gradlew" ]; then
-            echo "🔧 Generating gradlew..."
-            gradle wrapper --gradle-version 8.0
-            chmod +x gradlew
-          fi
+          build-root-directory: android
 
       - name: Build APK
         run: |
           cd android
-          
-          # 确保 gradlew 可执行
-          chmod +x gradlew
-          
-          # 构建
-          ./gradlew assembleDebug --stacktrace
-          
-          # 验证 APK
-          if [ -f "app/build/outputs/apk/debug/app-debug.apk" ]; then
-            echo "✅ APK built successfully"
-            ls -lh app/build/outputs/apk/debug/app-debug.apk
-          else
-            echo "❌ APK build failed"
-            exit 1
-          fi
+          ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: audiobook-tool-debug
+          name: debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
