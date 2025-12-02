@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志监控系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            height: calc(100vh - 20px);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header .icon {
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .controls {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        
+        .file-tabs {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .tab-btn {
+            padding: 8px 16px;
+            border: none;
+            background: white;
+            color: #495057;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .tab-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .refresh-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .refresh-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .refresh-btn:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .auto-refresh {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 22px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+        
+        .status {
+            padding: 10px 20px;
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            margin: 10px 20px;
+            border-radius: 0 6px 6px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+        
+        .status-text {
+            color: #1565c0;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        
+        .status-time {
+            color: #666;
+            font-size: 12px;
+        }
+        
+        .log-container {
+            padding: 0 20px 20px;
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 3px;
+        }
+        
+        .log-entry {
+            display: flex;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s ease;
+        }
+        
+        .log-entry:hover {
+            background: #f8f9fa;
+        }
+        
+        .log-time {
+            flex: 0 0 150px;
+            color: #666;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            padding: 3px 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            margin-right: 12px;
+            height: fit-content;
+        }
+        
+        .log-content {
+            flex: 1;
+            color: #333;
+            line-height: 1.4;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        /* JSON表格样式 */
+        .json-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .json-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+		
+        .json-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 12px;
+        }
+        
+        .json-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .json-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .key-cell {
+            font-family: 'Courier New', monospace;
+            background: #f1f3f4;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+            word-break: break-all;
+            max-width: 200px;
+        }
+        
+        .alias-cell {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .status-available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-unknown {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .action-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: 1px solid #ccc;
+            background: #f8f9fa;
+            color: #495057;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+		
+		.action-btn-danger {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+
+        .action-btn-danger:hover {
+            background: #f1b0b7;
+            border-color: #e2a3aa;
+        }
+		
+		.status-in-use {
+            background: #cce5ff;
+            color: #004085;
+        }
+		
+        .time-cell {
+            color: #666;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 20px;
+            border-left: 4px solid #f44336;
+            font-size: 13px;
+        }
+        
+        .empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        
+        .empty-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .file-tabs {
+                justify-content: center;
+            }
+            
+            .refresh-controls {
+                justify-content: center;
+            }
+            
+            .log-time {
+                flex: 0 0 100px;
+                font-size: 10px;
+            }
+            
+            .log-content {
+                font-size: 11px;
+            }
+            
+            .json-table {
+                font-size: 11px;
+            }
+            
+            .json-table th, .json-table td {
+                padding: 8px;
+            }
+            
+            .key-cell {
+                max-width: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <div class="icon">📋</div>
+                日志监控系统
+            </h1>
+            <div id="currentTime"></div>
+        </div>
+        
+        <div class="controls">
+            <div class="file-tabs">
+                <button class="tab-btn active" data-type="output">Output日志</button>
+                <button class="tab-btn" data-type="key">Key日志</button>
+                <button class="tab-btn" data-type="key-management">密钥管理</button>
+            </div>
+            
+            <div class="refresh-controls">
+                <div class="auto-refresh">
+                    <label class="switch">
+                        <input type="checkbox" id="autoRefresh">
+                        <span class="slider"></span>
+                    </label>
+                    <span>自动刷新 (5秒)</span>
+                </div>
+                <button class="refresh-btn" id="refreshBtn">
+                    <span>🔄</span>
+                    <span>立即刷新</span>
+                </button>
+            </div>
+        </div>
+        
+        <div class="status">
+            <div class="status-text">
+                当前文件: <span id="currentFile">Output日志</span> | 
+                总记录数: <span id="totalRecords">0</span>
+            </div>
+            <div class="status-time" id="lastUpdate">最后更新: --</div>
+        </div>
+        
+        <div class="log-container" id="logContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <div>正在加载日志...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFileType = 'output';
+        let refreshInterval = null;
+        
+        // 文件类型映射
+        const fileTypeNames = {
+            'output': 'Output日志',
+            'key': 'Key日志',
+			'key-management': '密钥管理' // 新增
+        };
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEventListeners();
+            //startAutoRefresh();
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            loadLogs();
+        });
+        
+        // 初始化事件监听器
+        function initializeEventListeners() {
+            // 文件类型切换
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentFileType = this.dataset.type;
+                    document.getElementById('currentFile').textContent = fileTypeNames[currentFileType];
+                    loadLogs();
+                });
+            });
+            
+            // 刷新按钮
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                loadLogs();
+            });
+            
+            // 自动刷新开关
+            document.getElementById('autoRefresh').addEventListener('change', function() {
+                if (this.checked) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+        }
+        
+        // 加载日志
+        async function loadLogs() {
+            const container = document.getElementById('logContainer');
+            const refreshBtn = document.getElementById('refreshBtn');
+            
+            // 显示加载状态
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>正在加载日志...</div>
+                </div>
+            `;
+            
+            refreshBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`/get_logs?file_type=${currentFileType}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (currentFileType === 'api') {
+                        displayJsonTable(data.logs);
+					} else if (currentFileType === 'key-management') {
+                        // 如果是密钥管理页面，调用新的API并渲染
+                        loadAndDisplayKeyManagement();
+                    } else {
+                        displayLogs(data.logs);
+                    }
+                    document.getElementById('totalRecords').textContent = data.total;
+                    document.getElementById('lastUpdate').textContent = 
+                        `最后更新: ${new Date().toLocaleString('zh-CN')}`;
+                } else {
+                    throw new Error('请求失败');
+                }
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="error">
+                        ❌ 加载日志失败: ${error.message}
+                    </div>
+                `;
+            } finally {
+                refreshBtn.disabled = false;
+            }
+        }
+        
+        // 显示普通日志
+        function displayLogs(logs) {
+            const container = document.getElementById('logContainer');
+            
+            if (!logs || logs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">📭</div>
+                        <div>暂无日志记录</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = logs.map(log => `
+                <div class="log-entry">
+                    <div class="log-time">${escapeHtml(log.time)}</div>
+                    <div class="log-content">${escapeHtml(log.content)}</div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = html;
+            // 滚动到底部
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        // 显示JSON表格
+        function displayJsonTable(logs) {
+            const container = document.getElementById('logContainer');
+            
+            if (!logs || logs.length === 0) {
+                container.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">📭</div>
+                        <div>暂无API记录</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 尝试解析JSON数据
+            let jsonData = [];
+            try {
+                // 查找JSON内容行
+                const jsonLine = logs.find(log => log.content.includes('[') || log.content.includes('{'));
+                if (jsonLine) {
+                    const content = jsonLine.content.replace(/=== JSON 文件内容 ===/, '').trim();
+                    jsonData = JSON.parse(content);
+                }
+            } catch (e) {
+                // 如果解析失败，显示原始内容
+                displayLogs(logs);
+                return;
+            }
+            
+            if (!Array.isArray(jsonData) || jsonData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">📭</div>
+                        <div>暂无API记录</div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const html = `
+                <table class="json-table">
+                    <thead>
+                        <tr>
+                            <th>API Key</th>
+                            <th>别名</th>
+                            <th>状态</th>
+                            <th>最后使用时间</th>
+							<th>操作</th> <!-- 新增这一列 -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${jsonData.map(item => `
+                            <tr>
+                                <td><div class="key-cell">${escapeHtml(item.key || '')}</div></td>
+                                <td class="alias-cell">${escapeHtml(item.alias || '')}</td>
+                                <td>${getStatusBadge(item.status || '')}</td>
+                                <td class="time-cell">${formatDateTime(item.last_used || '')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // 获取状态徽章
+        function getStatusBadge(status) {
+            const statusText = status.toString().toLowerCase();
+            let className = 'status-unknown';
+            let displayText = status;
+            
+            if (statusText === '可用' || statusText === 'available' || statusText === '正常') {
+                className = 'status-available';
+                displayText = '✅ ' + status;
+            } else if (statusText === '不可用' || statusText === 'unavailable' || statusText === '失效') {
+                className = 'status-unavailable';
+                displayText = '❌ ' + status;
+            } else if (statusText === '正在使用') {
+                className = 'status-in-use'; 
+                displayText = '🟢 ' + status;
+            }
+            
+            return `<span class="status-badge ${className}">${displayText}</span>`;
+        }
+        
+        // 格式化日期时间
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '--';
+            try {
+                const date = new Date(dateStr);
+                return date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            } catch (e) {
+                return dateStr;
+            }
+        }
+        
+        // 开始自动刷新
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            refreshInterval = setInterval(loadLogs, 5000);
+        }
+        
+        // 停止自动刷新
+        function stopAutoRefresh() {
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+        
+        // 更新当前时间
+        function updateCurrentTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = timeString;
+        }
+        
+        // HTML转义
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+// --- 新增函数：加载并显示密钥管理页面 ---
+async function loadAndDisplayKeyManagement() {
+    const container = document.getElementById('logContainer');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    // 显示加载状态
+    container.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            <div>正在加载密钥状态...</div>
+        </div>
+    `;
+    
+    refreshBtn.disabled = true;
+
+    try {
+        // 1. 获取密钥状态
+        const statusResponse = await fetch('/get_key_status');
+        const statusData = await statusResponse.json();
+
+        if (!statusResponse.ok || !statusData.success) {
+            throw new Error(statusData.message || '获取密钥状态失败');
+        }
+
+        // 2. 渲染密钥管理界面
+        displayKeyManagementPage(statusData);
+
+    } catch (error) {
+        container.innerHTML = `
+            <div class="error">
+                ❌ 加载密钥管理页面失败: ${error.message}
+            </div>
+        `;
+    } finally {
+        refreshBtn.disabled = false;
+    }
+}
+
+// --- 新增函数：渲染密钥管理页面的HTML ---
+function displayKeyManagementPage(statusData) {
+    const container = document.getElementById('logContainer');
+
+    const html = `
+        <div style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h3 style="margin: 0; color: #495057;">密钥池状态总览</h3>
+                    <p style="margin: 5px 0 0; color: #6c757d; font-size: 13px;">
+                        当前密钥: <strong>${escapeHtml(statusData.current_key_alias)}</strong> | 
+                        总数: <strong>${statusData.total_keys}</strong> | 
+                        可用: <strong style="color: #28a745;">${statusData.available_keys}</strong> | 
+                        不可用: <strong style="color: #dc3545;">${statusData.unavailable_keys}</strong>
+                    </p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="refresh-btn" id="rotateKeyBtn" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                        <span>🔄</span>
+                        <span>立即轮换密钥</span>
+                    </button>
+                    <button class="refresh-btn" onclick="showAddKeyDialog()" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                        <span>➕</span>
+                        <span>新增密钥</span>
+                    </button>
+                </div>
+            </div>
+
+            <table class="json-table">
+                <thead>
+                    <tr>
+                        <th>API Key</th>
+                        <th>别名</th>
+                        <th>状态</th>
+                        <th>最后使用时间</th>
+						<th>操作</th> <!-- 新增这一列 -->
+                    </tr>
+                </thead>
+                <tbody>
+                    ${statusData.pool_details.map(item => `
+                        <tr>
+                            <td><div class="key-cell">${escapeHtml(maskApiKey(item.key || ''))}</div></td>
+                            <td class="alias-cell">${escapeHtml(item.alias || '')}</td>
+                            <td>${getStatusBadge(item.status || '')}</td>
+                            <td class="time-cell">${formatDateTime(item.last_used || '')}</td>
+                            <td>${getActionButtons(item)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    container.innerHTML = html;
+
+    // 为新创建的“轮换密钥”按钮绑定事件
+    document.getElementById('rotateKeyBtn').addEventListener('click', triggerKeyRotation);
+}
+
+// --- 新增函数：触发密钥轮换 ---
+async function triggerKeyRotation() {
+    const btn = document.getElementById('rotateKeyBtn');
+    const originalText = btn.innerHTML;
+    
+    // 禁用按钮并显示加载状态
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span><span>正在执行...</span>';
+
+    try {
+        // 使用浏览器弹窗让用户输入认证信息
+        const username = prompt("请输入用户名:");
+        const password = prompt("请输入密码:");
+
+        if (!username || !password) {
+            alert("用户名和密码不能为空！");
+            return; // 中止操作
+        }
+
+        const response = await fetch('/rotate_key', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Basic ' + btoa(username + ':' + password)
+            }
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            alert('✅ ' + result.message);
+            // 轮换成功后，刷新密钥管理页面
+            loadAndDisplayKeyManagement();
+        } else {
+            alert('❌ 操作失败: ' + (result.message || '未知错误'));
+        }
+    } catch (error) {
+        alert('❌ 请求失败: ' + error.message);
+    } finally {
+        // 恢复按钮状态
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+// --- 新增函数：加载并显示密钥管理页面 ---
+async function loadAndDisplayKeyManagement() {
+    const container = document.getElementById('logContainer');
+    const refreshBtn = document.getElementById('refreshBtn');
+
+    // 显示加载状态
+    container.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            <div>正在加载密钥状态...</div>
+        </div>
+    `;
+    
+    refreshBtn.disabled = true;
+
+    try {
+        // 1. 获取密钥状态
+        const statusResponse = await fetch('/get_key_status');
+        const statusData = await statusResponse.json();
+
+        if (!statusResponse.ok || !statusData.success) {
+            throw new Error(statusData.message || '获取密钥状态失败');
+        }
+
+        // 2. 渲染密钥管理界面
+        displayKeyManagementPage(statusData);
+
+    } catch (error) {
+        container.innerHTML = `
+            <div class="error">
+                ❌ 加载密钥管理页面失败: ${error.message}
+            </div>
+        `;
+    } finally {
+        refreshBtn.disabled = false;
+    }
+}
+
+
+// 在 log_monitor.html 的 <script> 中找到 getActionButtons 函数
+function getActionButtons(item) {
+    const status = item.status;
+    let buttons = '';
+
+    if (status === '可用') {
+        buttons += `<button class="action-btn" onclick="updateKeyStatus('${item.key}', '不可用')">设为不可用</button>`;
+    } else if (status === '不可用') {
+        buttons += `<button class="action-btn" onclick="updateKeyStatus('${item.key}', '可用')">设为可用</button>`;
+    }
+    
+    // 为非“正在使用”状态的密钥添加删除按钮
+    if (status !== '正在使用') {
+        buttons += `<button class="action-btn action-btn-danger" onclick="deleteKey('${item.key}')">删除</button>`;
+    }
+
+    return buttons;
+}
+
+function showAddKeyDialog() {
+    // 简单的prompt方式，你可以替换为更美观的模态框
+    const newKey = prompt("请输入新的API Key:");
+    if (!newKey) return;
+
+    const newAlias = prompt("请输入该密钥的别名:");
+    if (!newAlias) return;
+
+    addNewKey(newKey, newAlias);
+}
+
+// 在 <script> 末尾添加
+
+// --- 新增函数：修改密钥状态 ---
+async function updateKeyStatus(keyToUpdate, newStatus) {
+    if (!confirm(`确定要将此密钥状态修改为 "${newStatus}" 吗？`)) {
+        return;
+    }
+
+    try {
+        // 删除了用户名密码输入
+        const response = await fetch('/update_key_status', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+                // 'Authorization' 头已被移除
+            },
+            body: JSON.stringify({ key: keyToUpdate, status: newStatus })
+        });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+            alert('✅ ' + result.message);
+            loadAndDisplayKeyManagement(); // 刷新页面
+        } else {
+            alert('❌ 操作失败: ' + (result.message || '未知错误'));
+        }
+    } catch (error) {
+        alert('❌ 请求失败: ' + error.message);
+    }
+}
+
+
+// --- 新增函数：新增密钥 ---
+async function addNewKey(newKey, newAlias) {
+    try {
+        // 删除了用户名密码输入
+        const response = await fetch('/add_new_key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+                // 'Authorization' 头已被移除
+            },
+            body: JSON.stringify({ key: newKey, alias: newAlias })
+        });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+            alert('✅ ' + result.message);
+            loadAndDisplayKeyManagement(); // 刷新页面
+        } else {
+            alert('❌ 操作失败: ' + (result.message || '未知错误'));
+        }
+    } catch (error) {
+        alert('❌ 请求失败: ' + error.message);
+    }
+}
+
+// 在 <script> 末尾添加
+
+// --- 新增函数：删除密钥 ---
+async function deleteKey(keyToDelete) {
+    // 使用更醒目的确认框
+    if (!confirm(`⚠️ 确定要永久删除此密钥吗？\n\n${maskApiKey(keyToDelete)}\n\n此操作不可恢复！`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/delete_key', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ key: keyToDelete })
+        });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+            alert('✅ ' + result.message);
+            loadAndDisplayKeyManagement(); // 刷新页面
+        } else {
+            alert('❌ 操作失败: ' + (result.message || '未知错误'));
+        }
+    } catch (error) {
+        alert('❌ 请求失败: ' + error.message);
+    }
+}
+
+function maskApiKey(key) {
+    if (!key || key.length <= 12) {
+        // 如果密钥太短，为了安全，全部显示为星号
+        return '****';
+    }
+    const start = key.substring(0, 8);
+    const end = key.substring(key.length - 4);
+    const maskLength = key.length - 12;
+    const mask = '*'.repeat(maskLength);
+    return start + mask + end;
+}
+
+</script>
+</body>
+</html>
