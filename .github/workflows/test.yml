@@ -32,7 +32,16 @@ jobs:
       - name: Install dependencies
         run: |
           cd backend
+          # 安装生产依赖
           pip install -r requirements.txt
+          # 🔧 安装格式化和检查工具
+          pip install black isort flake8
+          
+          # 验证安装
+          echo "🔍 验证工具安装..."
+          black --version
+          isort --version
+          flake8 --version
 
       - name: Auto-format code with black
         run: |
@@ -46,7 +55,7 @@ jobs:
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
             git add .
-            git commit -m "🔧 Auto-format code with black" || exit 0
+            git commit -m "🔧 Auto-format code with black [skip ci]" || exit 0
             git push || exit 0
           else
             echo "✅ Code is already formatted"
@@ -56,7 +65,7 @@ jobs:
         run: |
           cd backend
           echo "🔧 Auto-formatting imports with isort..."
-          isort . --profile black
+          isort . --profile black --line-length 127
           
           # 检查是否有文件被修改
           if [[ -n $(git status --porcelain) ]]; then
@@ -64,7 +73,7 @@ jobs:
             git config --local user.email "action@github.com"
             git config --local user.name "GitHub Action"
             git add .
-            git commit -m "🔧 Auto-format imports with isort" || exit 0
+            git commit -m "🔧 Auto-format imports with isort [skip ci]" || exit 0
             git push || exit 0
           else
             echo "✅ Imports are already formatted"
@@ -79,7 +88,7 @@ jobs:
 
   python-tests:
     runs-on: ubuntu-latest
-    needs: python-quality  # 等待格式化完成
+    needs: python-quality
     
     steps:
       - name: Checkout code
@@ -96,8 +105,13 @@ jobs:
         run: |
           cd backend
           pip install -r requirements.txt
+          pip install pytest pytest-cov  # 测试工具
 
       - name: Run tests
         run: |
           cd backend
-          python -m pytest tests/ -v --tb=short || true
+          if [ -d "tests" ] && [ "$(ls -A tests)" ]; then
+            python -m pytest tests/ -v --tb=short || true
+          else
+            echo "⚠️ No tests found, skipping"
+          fi
