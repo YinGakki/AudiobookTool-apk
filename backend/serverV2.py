@@ -48,6 +48,7 @@ from pydub.silence import detect_leading_silence
 import uuid
 from pydub.effects import normalize as pydub_normalize
 import uvicorn
+from urllib.parse import urlparse, urlunparse, unquote
 from ollama import Client  # 导入Ollama客户端
 
 os.system('cls' if os.name == 'nt' else 'clear')
@@ -868,8 +869,11 @@ async def merge_characters(req: MergeCharactersRequest):
 
     project_dir = os.path.join(PROJECTS_DIR, novel_name)
     json_dir = os.path.join(project_dir, 'chapters_json')
-    profiles_path = os.path.join(project_dir, 'character_profiles.json')
+    
+    # 🔧 添加缺失的路径定义
     timbres_path = os.path.join(project_dir, 'character_timbres.json')
+    profiles_path = os.path.join(project_dir, 'character_profiles.json')
+    
     output_wav_base_dir = os.path.join(OUTPUT_DIR, novel_name, 'wavs')
 
     if not os.path.isdir(json_dir):
@@ -877,7 +881,7 @@ async def merge_characters(req: MergeCharactersRequest):
 
     # --- 1. 加载音色配置 ---
     character_timbres = {}
-    if os.path.exists(timbres_path):
+    if os.path.exists(timbres_path):  # 现在这个变量已定义
         with open(timbres_path, 'r', encoding='utf-8') as f:
             character_timbres = json.load(f)
     
@@ -942,15 +946,18 @@ async def merge_characters(req: MergeCharactersRequest):
         logger.info(f"在 {modified_files_count} 个章节文件中完成了角色名合并。")
         logger.info(f"成功自动重命名了 {renamed_wav_count} 个WAV音频文件。")
 
-        # --- 5. 清理配置文件 (逻辑不变) ---
-        if os.path.exists(profiles_path):
-            with open(profiles_path, 'r', encoding='utf-8') as f: profiles = json.load(f)
+        # --- 5. 清理配置文件 ---
+        if os.path.exists(profiles_path):  # 现在这个变量已定义
+            with open(profiles_path, 'r', encoding='utf-8') as f:
+                profiles = json.load(f)
             for name in source_names:
-                if name in profiles: del profiles[name]
-            with open(profiles_path, 'w', encoding='utf-8') as f: json.dump(profiles, f, ensure_ascii=False, indent=4)
+                if name in profiles:
+                    del profiles[name]
+            with open(profiles_path, 'w', encoding='utf-8') as f:
+                json.dump(profiles, f, ensure_ascii=False, indent=4)
             logger.info("已从角色简介中移除被合并的角色。")
 
-        if character_timbres: # 使用已经加载的音色配置
+        if character_timbres:  # 使用已经加载的音色配置
             if target_name not in character_timbres:
                 for name in source_names:
                     if name in character_timbres:
@@ -958,8 +965,10 @@ async def merge_characters(req: MergeCharactersRequest):
                         logger.info(f"目标角色 '{target_name}' 继承了源角色 '{name}' 的音色。")
                         break
             for name in source_names:
-                if name in character_timbres: del character_timbres[name]
-            with open(timbres_path, 'w', encoding='utf-8') as f: json.dump(character_timbres, f, ensure_ascii=False, indent=2)
+                if name in character_timbres:
+                    del character_timbres[name]
+            with open(timbres_path, 'w', encoding='utf-8') as f:
+                json.dump(character_timbres, f, ensure_ascii=False, indent=2)
             logger.info("已从音色配置中移除被合并的角色。")
 
         return {
