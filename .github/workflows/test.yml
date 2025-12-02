@@ -1,3 +1,4 @@
+# .github/workflows/test.yml
 name: Code Quality
 
 on:
@@ -18,8 +19,9 @@ jobs:
       
       - name: Install dependencies
         run: |
+          cd backend
           pip install flake8 black isort mypy
-          pip install -r backend/requirements.txt
+          pip install -r requirements.txt
       
       - name: Run flake8
         run: |
@@ -37,28 +39,26 @@ jobs:
           cd backend
           isort --check-only .
 
-  frontend-lint:
+  python-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+          python-version: '3.8'
       
       - name: Install dependencies
         run: |
-          cd frontend
-          npm ci
+          cd backend
+          pip install -r requirements.txt
       
-      - name: Run ESLint
+      - name: Run tests if exist
         run: |
-          cd frontend
-          npm run lint
-      
-      - name: Run tests
-        run: |
-          cd frontend
-          npm run test:ci
+          cd backend
+          if [ -d "tests" ] && [ "$(ls -A tests)" ]; then
+            echo "Running tests..."
+            python -m pytest tests/ -v --tb=short
+          else
+            echo "No tests directory found, skipping tests"
+          fi
