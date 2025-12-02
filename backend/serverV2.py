@@ -795,6 +795,11 @@ async def rename_character(req: RenameCharacterRequest):
     if not os.path.isdir(json_dir):
         raise HTTPException(status_code=404, detail="小说章节目录未找到。")
     
+    # 🔧 添加缺失的路径定义
+    project_dir = os.path.join(PROJECTS_DIR, novel_name)
+    timbres_path = os.path.join(project_dir, 'character_timbres.json')
+    profiles_path = os.path.join(project_dir, 'character_profiles.json')
+    
     modified_count = 0
     try:
         for chapter_filename in chapter_files:
@@ -821,8 +826,9 @@ async def rename_character(req: RenameCharacterRequest):
                 modified_count += 1
         
         # --- 2. 修改 character_timbres.json 文件 ---
-        if os.path.exists(timbres_path):
-            with open(timbres_path, 'r', encoding='utf-8') as f: timbres_config = json.load(f)
+        if os.path.exists(timbres_path):  # ✅ 现在变量已定义
+            with open(timbres_path, 'r', encoding='utf-8') as f: 
+                timbres_config = json.load(f)
             if old_name in timbres_config:
                 timbres_config[new_name] = timbres_config.pop(old_name)
                 with open(timbres_path, 'w', encoding='utf-8') as f:
@@ -830,8 +836,9 @@ async def rename_character(req: RenameCharacterRequest):
                 logger.info(f"已更新音色配置文件: '{old_name}' 更名为 '{new_name}'")
         
         # --- 3. 修改 character_profiles.json 文件 ---
-        if os.path.exists(profiles_path):
-            with open(profiles_path, 'r', encoding='utf-8') as f: profiles_config = json.load(f)
+        if os.path.exists(profiles_path):  # ✅ 现在变量已定义
+            with open(profiles_path, 'r', encoding='utf-8') as f: 
+                profiles_config = json.load(f)
             if old_name in profiles_config:
                 profiles_config[new_name] = profiles_config.pop(old_name)
                 with open(profiles_path, 'w', encoding='utf-8') as f:
