@@ -870,7 +870,7 @@ async def merge_characters(req: MergeCharactersRequest):
     project_dir = os.path.join(PROJECTS_DIR, novel_name)
     json_dir = os.path.join(project_dir, 'chapters_json')
     
-    # 🔧 添加缺失的路径定义
+    # 🔧 在这里添加缺失的路径定义
     timbres_path = os.path.join(project_dir, 'character_timbres.json')
     profiles_path = os.path.join(project_dir, 'character_profiles.json')
     
@@ -957,7 +957,7 @@ async def merge_characters(req: MergeCharactersRequest):
                 json.dump(profiles, f, ensure_ascii=False, indent=4)
             logger.info("已从角色简介中移除被合并的角色。")
 
-        if character_timbres:  # 使用已经加载的音色配置
+        if character_timbres: # 使用已经加载的音色配置
             if target_name not in character_timbres:
                 for name in source_names:
                     if name in character_timbres:
