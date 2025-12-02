@@ -13,6 +13,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Verify Android project structure
+        run: |
+          echo "Checking project structure..."
+          ls -la
+          if [ ! -d "android" ]; then
+            echo "❌ Android directory not found"
+            exit 1
+          fi
+          if [ ! -f "android/gradlew" ]; then
+            echo "❌ gradlew not found in android directory"
+            exit 1
+          fi
+          echo "✅ Android project structure verified"
+
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
@@ -28,21 +42,65 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/gradle-wrapper.properties', 'android/**/*.gradle*') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
       - name: Copy backend files to Android assets
         run: |
+          echo "Copying backend files..."
           mkdir -p android/app/src/main/python
-          cp -r backend/* android/app/src/main/python/
+          if [ -d "backend" ]; then
+            cp -r backend/* android/app/src/main/python/
+            echo "✅ Backend files copied"
+          else
+            echo "⚠️ Backend directory not found, skipping"
+          fi
+          
+          echo "Copying frontend files..."
           mkdir -p android/app/src/main/assets
-          cp -r frontend/* android/app/src/main/assets/
+          if [ -d "frontend" ]; then
+            cp -r frontend/* android/app/src/main/assets/
+            echo "✅ Frontend files copied"
+          else
+            echo "⚠️ Frontend directory not found, skipping"
+          fi
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x android/gradlew
-
-      - name: Build Release APK
+      - name: Verify gradlew exists
         run: |
           cd android
+          echo "Current directory: $(pwd)"
+          echo "Files in current directory:"
+          ls -la
+          
+          if [ ! -f "gradlew" ]; then
+            echo "❌ gradlew still not found"
+            exit 1
+          fi
+          
+          # 检查文件权限
+          if [ ! -x "gradlew" ]; then
+            echo "⚠️ gradlew is not executable, fixing permissions..."
+            chmod +x gradlew
+          fi
+          
+          echo "✅ gradlew verified and executable"
+
+      - name: Build Release APK
+        env:
+          APP_ID: ${{ vars.APPLICATION_ID || 'com.yourcompany.voicestudiopro' }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          cd android
+          echo "Building $APP_ID version $VERSION"
+          echo "Gradle version:"
+          ./gradlew --version
+          
+          # 构建前检查
+          echo "Running gradle tasks check..."
+          ./gradlew tasks --group=build
+          
+          # 开始构建
           ./gradlew assembleRelease
 
       - name: Sign APK
@@ -52,26 +110,48 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > android/app/keystore.jks
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "⚠️ No keystore configured, skipping signing"
+            exit 0
+          fi
+          
+          echo "Signing APK..."
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/keystore.jks
           cd android
+          
           ./gradlew assembleRelease -Pandroid.injected.signing.store.file=app/keystore.jks \
-            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
-            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
-            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+            -Pandroid.injected.signing.store.password="${{ secrets.KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.KEY_PASSWORD }}"
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 90
 
       - name: Create Release
+        if: success()
         uses: softprops/action-gh-release@v1
         with:
+          name: Voice Studio Pro ${{ github.ref_name }}
+          body: |
+            ## 🎉 Voice Studio Pro ${{ github.ref_name }}
+            
+            ### 📱 下载信息
+            - **版本**: ${{ github.ref_name }}
+            - **构建**: ${{ github.run_number }}
+            - **提交**: ${{ github.sha }}
+            
+            ### 🔧 安装说明
+            1. 下载 `app-release.apk`
+            2. 在 Android 设备上启用"未知来源"安装
+            3. 安装 APK 文件
+            
           files: android/app/build/outputs/apk/release/app-release.apk
           draft: false
           prerelease: false
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update QR Code Page
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./android/app/build/outputs/apk/release
-          destination_dir: releases/${{ github.ref_name }}
