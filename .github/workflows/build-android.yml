@@ -26,10 +26,10 @@ jobs:
           # 创建基本目录
           mkdir -p android/app/src/main/{java,res/{layout,values},python,assets}
           
-          # 使用 printf 创建文件（更可靠）
+          # 创建配置文件
           printf 'include ":app"\n' > android/settings.gradle
           
-          printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.0.0"\n    }\n}\n\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > android/build.gradle
+          printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.1.0"\n    }\n}\n\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > android/build.gradle
           
           printf 'apply plugin: "com.android.application"\n\nandroid {\n    namespace "com.audiobooktool"\n    compileSdk 34\n    \n    defaultConfig {\n        applicationId "com.audiobooktool"\n        minSdk 21\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n    \n    buildTypes {\n        release {\n            minifyEnabled false\n        }\n    }\n}\n\ndependencies {\n    implementation "androidx.appcompat:appcompat:1.6.1"\n}\n' > android/app/build.gradle
           
@@ -38,7 +38,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
         with:
-          gradle-version: 8.0
+          gradle-version: 8.4  # 使用最新的稳定版本
           build-root-directory: android
 
       - name: Build APK
