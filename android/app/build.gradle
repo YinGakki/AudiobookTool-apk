@@ -1,1 +1,70 @@
+android {
+    compileSdkVersion 33
+    
+    defaultConfig {
+        applicationId "com.yourcompany.voicestudiopro"
+        minSdkVersion 24
+        targetSdkVersion 33
+        versionCode project.hasProperty('versionCode') ? project.versionCode.toInteger() : 1
+        versionName project.hasProperty('versionName') ? project.versionName : "1.0.0"
+        
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        python {
+            version "3.8"
+            pip {
+                install "fastapi"
+                install "uvicorn[standard]"
+                install "flask"
+                install "requests"
+                install "pydub"
+                install "soundfile"
+                install "beautifulsoup4"
+                install "lxml"
+                install "pytz"
+                install "aiofiles"
+                install "python-multipart"
+            }
+        }
+    }
+    
+    signingConfigs {
+        release {
+            if (project.hasProperty('KEYSTORE_FILE')) {
+                storeFile file(KEYSTORE_FILE)
+                storePassword KEYSTORE_PASSWORD
+                keyAlias KEY_ALIAS
+                keyPassword KEY_PASSWORD
+            }
+        }
+    }
+    
+    buildTypes {
+        debug {
+            debuggable true
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'com.chaquo.python:gradle:14.0.2'
+    
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
 
