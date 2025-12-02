@@ -1,0 +1,82 @@
+name: Format Code
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**/*.py'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'backend/**/*.py'
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'  # 只在 push 时自动格式化
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install formatting tools
+        run: |
+          pip install black==23.7.0 isort==5.12.0 flake8==6.0.0
+          
+      - name: Format code
+        run: |
+          cd backend
+          
+          # 格式化代码
+          black . --line-length 127
+          isort . --profile black --line-length 127
+          
+          # 检查是否有修改
+          if [[ -n $(git status --porcelain) ]]; then
+            echo "📝 Code was formatted"
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add .
+            git commit -m "🔧 Auto-format code [skip ci]" || exit 0
+            git push || exit 0
+          else
+            echo "✅ Code is already formatted"
+          fi
+
+  check-format:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'  # PR 时只检查
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install formatting tools
+        run: |
+          pip install black==23.7.0 isort==5.12.0 flake8==6.0.0
+          
+      - name: Check formatting
+        run: |
+          cd backend
+          
+          # 检查格式
+          echo "🔍 Checking black formatting..."
+          black --check . --line-length 127
+          
+          echo "🔍 Checking isort formatting..."
+          isort --check-only . --profile black --line-length 127
+          
+          echo "🔍 Running flake8..."
+          flake8 . --max-line-length=127
