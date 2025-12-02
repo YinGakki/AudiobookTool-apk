@@ -21,12 +21,12 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Create complete Android project
+      - name: Create complete Android project with resources
         run: |
           echo "🔧 Creating complete Android project..."
           
           # 创建目录结构
-          mkdir -p android/app/src/main/{java/com/audiobooktool,res/{layout,values},python,assets}
+          mkdir -p android/app/src/main/{java/com/audiobooktool,res/{layout,values,drawable,mipmap-{hdpi,mdpi,xhdpi,xxhdpi,xxxhdpi}},python,assets}
           
           # 创建 settings.gradle
           printf 'include ":app"\n' > android/settings.gradle
@@ -35,10 +35,10 @@ jobs:
           printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.1.0"\n    }\n}\n\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > android/build.gradle
           
           # 创建 app/build.gradle
-          printf 'apply plugin: "com.android.application"\n\nandroid {\n    namespace "com.audiobooktool"\n    compileSdk 34\n    \n    defaultConfig {\n        applicationId "com.audiobooktool"\n        minSdk 21\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n    \n    buildTypes {\n        release {\n            minifyEnabled false\n        }\n    }\n    \n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_1_8\n        targetCompatibility JavaVersion.VERSION_1_8\n    }\n}\n\ndependencies {\n    implementation "androidx.appcompat:appcompat:1.6.1"\n    implementation "com.google.android.material:material:1.9.0"\n    implementation "androidx.constraintlayout:constraintlayout:2.1.4"\n}\n' > android/app/build.gradle
+          printf 'apply plugin: "com.android.application"\n\nandroid {\n    namespace "com.audiobooktool"\n    compileSdk 34\n    \n    defaultConfig {\n        applicationId "com.audiobooktool"\n        minSdk 21\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n    \n    buildTypes {\n        release {\n            minifyEnabled false\n        }\n    }\n    \n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_1_8\n        targetCompatibility JavaVersion.VERSION_1_8\n    }\n}\n\ndependencies {\n    implementation "androidx.appcompat:appcompat:1.6.1"\n}\n' > android/app/build.gradle
           
-          # 创建 AndroidManifest.xml（必需！）
-          printf '<?xml version="1.0" encoding="utf-8"?>\n<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    package="com.audiobooktool">\n\n    <application\n        android:allowBackup="true"\n        android:icon="@mipmap/ic_launcher"\n        android:label="@string/app_name"\n        android:theme="@style/AppTheme">\n        <activity\n            android:name=".MainActivity"\n            android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n\n</manifest>\n' > android/app/src/main/AndroidManifest.xml
+          # 创建 AndroidManifest.xml（不引用图标）
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    package="com.audiobooktool">\n\n    <application\n        android:allowBackup="true"\n        android:label="@string/app_name"\n        android:theme="@android:style/Theme.Material.Light">\n        <activity\n            android:name=".MainActivity"\n            android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n\n</manifest>\n' > android/app/src/main/AndroidManifest.xml
           
           # 创建 strings.xml
           printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <string name="app_name">Audiobook Tool</string>\n</resources>\n' > android/app/src/main/res/values/strings.xml
@@ -50,13 +50,13 @@ jobs:
           printf 'package com.audiobooktool;\n\nimport androidx.appcompat.app.AppCompatActivity;\nimport android.os.Bundle;\n\npublic class MainActivity extends AppCompatActivity {\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_main);\n    }\n}\n' > android/app/src/main/java/com/audiobooktool/MainActivity.java
           
           # 创建 activity_main.xml
-          printf '<?xml version="1.0" encoding="utf-8"?>\n<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"\n    xmlns:app="http://schemas.android.com/apk/res-auto"\n    android:layout_width="match_parent"\n    android:layout_height="match_parent">\n\n    <TextView\n        android:layout_width="wrap_content"\n        android:layout_height="wrap_content"\n        android:text="Audiobook Tool"\n        android:textSize="24sp"\n        app:layout_constraintBottom_toBottomOf="parent"\n        app:layout_constraintLeft_toLeftOf="parent"\n        app:layout_constraintRight_toRightOf="parent"\n        app:layout_constraintTop_toTopOf="parent" />\n\n</androidx.constraintlayout.widget.ConstraintLayout>\n' > android/app/src/main/res/layout/activity_main.xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"\n    android:layout_width="match_parent"\n    android:layout_height="match_parent"\n    android:orientation="vertical"\n    android:padding="16dp">\n\n    <TextView\n        android:layout_width="wrap_content"\n        android:layout_height="wrap_content"\n        android:text="Audiobook Tool"\n        android:textSize="24sp"\n        android:layout_gravity="center"\n        android:layout_marginBottom="20dp" />\n\n</LinearLayout>\n' > android/app/src/main/res/layout/activity_main.xml
+          
+          # 创建简单的图标（使用 XML drawable）
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<vector xmlns:android="http://schemas.android.com/apk/res/android"\n    android:width="108dp"\n    android:height="108dp"\n    android:viewportWidth="108"\n    android:viewportHeight="108">\n    <path\n        android:fillColor="#3DDC84"\n        android:pathData="M0,0h108v108h-108z" />\n    <path\n        android:fillColor="#00000000"\n        android:pathData="M9,0L9,108L99,108L99,0L9,0zM91,8L91,100L17,100L17,8L91,8z" />\n</vector>\n' > android/app/src/main/res/drawable/ic_launcher.xml
           
           # 创建 gradle.properties
           printf "org.gradle.jvmargs=-Xmx2048m\nandroid.useAndroidX=true\nandroid.enableJetifier=true\n" > android/gradle.properties
-          
-          # 创建默认图标目录（避免构建错误）
-          mkdir -p android/app/src/main/res/mipmap-{hdpi,mdpi,xhdpi,xxhdpi,xxxhdpi}
           
           echo "✅ Complete Android project created"
 
