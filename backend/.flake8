@@ -1,12 +1,11 @@
 [flake8]
 max-line-length = 127
 max-complexity = 10
-# 忽略特定的错误代码
 ignore = 
-    E501,  # line too long
-    W503,   # line break before binary operator
-    E203,   # whitespace before ':'
-    F821,   # undefined name (临时忽略)
+    E501,  
+    W503,   
+    E203,   
+    F821,   
 exclude = 
     .git,
     __pycache__,
