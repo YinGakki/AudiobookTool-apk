@@ -21,101 +21,73 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Create Android project
+      - name: Create complete Android project
         run: |
-          echo "🔧 Creating Android project structure..."
+          echo "🔧 Creating complete Android project..."
           
-          # 创建目录
-          mkdir -p android/{app/src/main/{java,res/{layout,values},python,assets},gradle/wrapper}
+          # 创建目录结构
+          mkdir -p android/app/src/main/{java/com/audiobooktool,res/{layout,values},python,assets}
           
           # 创建 settings.gradle
-          echo 'include ":app"' > android/settings.gradle
+          printf 'include ":app"\n' > android/settings.gradle
           
           # 创建根 build.gradle
-          echo 'buildscript {' > android/build.gradle
-          echo '    repositories {' >> android/build.gradle
-          echo '        google()' >> android/build.gradle
-          echo '        mavenCentral()' >> android/build.gradle
-          echo '    }' >> android/build.gradle
-          echo '    dependencies {' >> android/build.gradle
-          echo '        classpath "com.android.tools.build:gradle:8.1.0"' >> android/build.gradle
-          echo '    }' >> android/build.gradle
-          echo '}' >> android/build.gradle
-          echo '' >> android/build.gradle
-          echo 'allprojects {' >> android/build.gradle
-          echo '    repositories {' >> android/build.gradle
-          echo '        google()' >> android/build.gradle
-          echo '        mavenCentral()' >> android/build.gradle
-          echo '    }' >> android/build.gradle
-          echo '}' >> android/build.gradle
+          printf 'buildscript {\n    repositories {\n        google()\n        mavenCentral()\n    }\n    dependencies {\n        classpath "com.android.tools.build:gradle:8.1.0"\n    }\n}\n\nallprojects {\n    repositories {\n        google()\n        mavenCentral()\n    }\n}\n' > android/build.gradle
           
           # 创建 app/build.gradle
-          echo 'apply plugin: "com.android.application"' > android/app/build.gradle
-          echo '' >> android/app/build.gradle
-          echo 'android {' >> android/app/build.gradle
-          echo '    namespace "com.audiobooktool"' >> android/app/build.gradle
-          echo '    compileSdk 34' >> android/app/build.gradle
-          echo '    ' >> android/app/build.gradle
-          echo '    defaultConfig {' >> android/app/build.gradle
-          echo '        applicationId "com.audiobooktool"' >> android/app/build.gradle
-          echo '        minSdk 21' >> android/app/build.gradle
-          echo '        targetSdk 34' >> android/app/build.gradle
-          echo '        versionCode 1' >> android/app/build.gradle
-          echo '        versionName "1.0"' >> android/app/build.gradle
-          echo '    }' >> android/app/build.gradle
-          echo '    ' >> android/app/build.gradle
-          echo '    buildTypes {' >> android/app/build.gradle
-          echo '        release {' >> android/app/build.gradle
-          echo '            minifyEnabled false' >> android/app/build.gradle
-          echo '        }' >> android/app/build.gradle
-          echo '    }' >> android/app/build.gradle
-          echo '}' >> android/app/build.gradle
-          echo '' >> android/app/build.gradle
-          echo 'dependencies {' >> android/app/build.gradle
-          echo '    implementation "androidx.appcompat:appcompat:1.6.1"' >> android/app/build.gradle
-          echo '}' >> android/app/build.gradle
+          printf 'apply plugin: "com.android.application"\n\nandroid {\n    namespace "com.audiobooktool"\n    compileSdk 34\n    \n    defaultConfig {\n        applicationId "com.audiobooktool"\n        minSdk 21\n        targetSdk 34\n        versionCode 1\n        versionName "1.0"\n    }\n    \n    buildTypes {\n        release {\n            minifyEnabled false\n        }\n    }\n    \n    compileOptions {\n        sourceCompatibility JavaVersion.VERSION_1_8\n        targetCompatibility JavaVersion.VERSION_1_8\n    }\n}\n\ndependencies {\n    implementation "androidx.appcompat:appcompat:1.6.1"\n    implementation "com.google.android.material:material:1.9.0"\n    implementation "androidx.constraintlayout:constraintlayout:2.1.4"\n}\n' > android/app/build.gradle
+          
+          # 创建 AndroidManifest.xml（必需！）
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<manifest xmlns:android="http://schemas.android.com/apk/res/android"\n    package="com.audiobooktool">\n\n    <application\n        android:allowBackup="true"\n        android:icon="@mipmap/ic_launcher"\n        android:label="@string/app_name"\n        android:theme="@style/AppTheme">\n        <activity\n            android:name=".MainActivity"\n            android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n    </application>\n\n</manifest>\n' > android/app/src/main/AndroidManifest.xml
+          
+          # 创建 strings.xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <string name="app_name">Audiobook Tool</string>\n</resources>\n' > android/app/src/main/res/values/strings.xml
+          
+          # 创建 styles.xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">\n        <item name="colorPrimary">#3F51B5</item>\n        <item name="colorPrimaryDark">#303F9F</item>\n        <item name="colorAccent">#FF4081</item>\n    </style>\n</resources>\n' > android/app/src/main/res/values/styles.xml
+          
+          # 创建 MainActivity.java
+          printf 'package com.audiobooktool;\n\nimport androidx.appcompat.app.AppCompatActivity;\nimport android.os.Bundle;\n\npublic class MainActivity extends AppCompatActivity {\n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_main);\n    }\n}\n' > android/app/src/main/java/com/audiobooktool/MainActivity.java
+          
+          # 创建 activity_main.xml
+          printf '<?xml version="1.0" encoding="utf-8"?>\n<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"\n    xmlns:app="http://schemas.android.com/apk/res-auto"\n    android:layout_width="match_parent"\n    android:layout_height="match_parent">\n\n    <TextView\n        android:layout_width="wrap_content"\n        android:layout_height="wrap_content"\n        android:text="Audiobook Tool"\n        android:textSize="24sp"\n        app:layout_constraintBottom_toBottomOf="parent"\n        app:layout_constraintLeft_toLeftOf="parent"\n        app:layout_constraintRight_toRightOf="parent"\n        app:layout_constraintTop_toTopOf="parent" />\n\n</androidx.constraintlayout.widget.ConstraintLayout>\n' > android/app/src/main/res/layout/activity_main.xml
           
           # 创建 gradle.properties
-          echo 'org.gradle.jvmargs=-Xmx2048m' > android/gradle.properties
-          echo 'android.useAndroidX=true' >> android/gradle.properties
+          printf "org.gradle.jvmargs=-Xmx2048m\nandroid.useAndroidX=true\nandroid.enableJetifier=true\n" > android/gradle.properties
           
-          echo "✅ Configuration files created"
+          # 创建默认图标目录（避免构建错误）
+          mkdir -p android/app/src/main/res/mipmap-{hdpi,mdpi,xhdpi,xxhdpi,xxxhdpi}
+          
+          echo "✅ Complete Android project created"
 
-      - name: Download Gradle and create wrapper
+      - name: Setup Gradle
         run: |
           cd android
-          
-          echo "📦 Downloading Gradle..."
           wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip
-          
-          echo "📂 Extracting Gradle..."
           unzip -q gradle-8.4-bin.zip
-          
-          echo "🔧 Creating Gradle wrapper..."
           ./gradle-8.4/bin/gradle wrapper --gradle-version 8.4
-          
-          echo "🔑 Setting permissions..."
           chmod +x gradlew
-          
-          echo "✅ Gradle wrapper created"
 
       - name: Copy project files
         run: |
           mkdir -p android/app/src/main/{python,assets}
           if [ -d "backend" ]; then
             cp -r backend/* android/app/src/main/python/ 2>/dev/null || true
+            echo "✅ Backend files copied"
           fi
           if [ -d "frontend" ]; then
             cp -r frontend/* android/app/src/main/assets/ 2>/dev/null || true
+            echo "✅ Frontend files copied"
           fi
 
       - name: Build APK
         run: |
           cd android
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
+          name: audiobook-tool-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
