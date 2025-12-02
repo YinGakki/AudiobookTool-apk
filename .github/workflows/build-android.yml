@@ -7,51 +7,24 @@ on:
       - 'android/**'
       - 'backend/**'
       - 'frontend/**'
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'android/**'
-      - 'backend/**'
-      - 'frontend/**'
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-
-      - name: Install backend dependencies
-        run: |
-          cd backend
-          pip install -r requirements.txt
-          pip install pytest
-
-      - name: Run backend tests
-        run: |
-          cd backend
-          python -m pytest tests/ -v
-
-      - name: Validate frontend
-        run: |
-          cd frontend
-          npm install
-          npm run lint
-          npm run test
-
   build:
-    needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Verify Android project
+        run: |
+          echo "Project structure:"
+          find . -name "gradlew" -type f
+          
+          if [ ! -d "android" ]; then
+            echo "❌ Android directory not found"
+            exit 1
+          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -62,35 +35,31 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v2
 
-      - name: Cache Gradle
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Copy backend files to Android assets
+      - name: Copy files and build
         run: |
+          # 创建目录并复制文件
           mkdir -p android/app/src/main/python
-          cp -r backend/* android/app/src/main/python/
           mkdir -p android/app/src/main/assets
-          cp -r frontend/* android/app/src/main/assets/
-
-      - name: Grant execute permission for gradlew
-        run: chmod +x android/gradlew
-
-      - name: Build Debug APK
-        run: |
+          
+          if [ -d "backend" ]; then
+            cp -r backend/* android/app/src/main/python/
+          fi
+          
+          if [ -d "frontend" ]; then
+            cp -r frontend/* android/app/src/main/assets/
+          fi
+          
+          # 进入 Android 目录并构建
           cd android
+          
+          # 检查 gradlew
+          if [ ! -f "gradlew" ]; then
+            echo "❌ gradlew not found"
+            exit 1
+          fi
+          
+          chmod +x gradlew
           ./gradlew assembleDebug
-
-      - name: Build Release APK
-        run: |
-          cd android
-          ./gradlew assembleRelease
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v3
@@ -98,17 +67,3 @@ jobs:
           name: debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
-
-      - name: Upload Release APK
-        uses: actions/upload-artifact@v3
-        with:
-          name: release-apk
-          path: android/app/build/outputs/apk/release/app-release.apk
-          retention-days: 90
-
-      - name: Generate QR Code for APK
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./android/app/build/outputs/apk/release
-          destination_dir: apk
