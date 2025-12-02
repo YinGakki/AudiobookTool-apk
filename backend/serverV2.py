@@ -18,13 +18,6 @@ ffmpeg_path = os.path.join(base_dir, "ffmpeg-8.0-full_build", "bin")
 # 插入到最前面，确保优先级
 os.environ['PATH'] = base_dir + os.pathsep + ffmpeg_path + os.pathsep + os.environ['PATH']
 
-# ==========================================
-# 下面是你原本的代码...
-# import ...
-# ==========================================
-
-import os
-import sys
 import shutil
 import argparse
 import base64
@@ -55,7 +48,7 @@ from pydub.silence import detect_leading_silence
 import uuid
 from pydub.effects import normalize as pydub_normalize
 import uvicorn
-#from ollama import Client  # 导入Ollama客户端
+from ollama import Client  # 导入Ollama客户端
 
 os.system('cls' if os.name == 'nt' else 'clear')
 
